@@ -1,20 +1,199 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello ReclamationController!{% endblock %}
+{% block title %}Liste des réclamations{% endblock %}
 
 {% block body %}
+
 <style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #F0F2F8;
+    --surface: #FFFFFF;
+    --navy:    #0B1D35;
+    --red:     #E5334A;
+    --teal:    #07B9A0;
+    --muted:   #7D8FA8;
+    --border:  #E2E7F0;
+    --text:    #16253A;
+    --text2:   #475B74;
+    --font:    'Sora', sans-serif;
+    --r:       12px;
+    --shadow:  0 2px 16px rgba(11,29,53,.09);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  /* ─── HEADER ROW ── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .page-title { font-size: 1.7rem; font-weight: 800; color: var(--navy); letter-spacing: -.5px; }
+  .page-title em { color: var(--red); font-style: normal; }
+  .page-eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal); margin-bottom: .3rem; }
+
+  /* ─── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 9px;
+    font-family: var(--font); font-size: .82rem; font-weight: 700;
+    cursor: pointer; border: none; text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover  { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+  .btn-teal   { background: var(--teal); color: #fff; box-shadow: 0 4px 14px rgba(7,185,160,.32); }
+  .btn-teal:hover { box-shadow: 0 7px 22px rgba(7,185,160,.44); }
+  .btn-warning { background: #F59000; color: #fff; box-shadow: 0 4px 14px rgba(245,144,0,.28); }
+  .btn-warning:hover { box-shadow: 0 7px 22px rgba(245,144,0,.4); }
+  .btn-ghost  { background: transparent; color: var(--muted); border: 1.5px solid var(--border); box-shadow: none; }
+  .btn-ghost:hover { color: var(--text); background: var(--bg); }
+
+  /* ─── TABLE CARD ── */
+  .table-card {
+    background: var(--surface);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: #F5F7FB;
+    border-bottom: 2px solid var(--border);
+  }
+
+  th {
+    padding: 13px 18px;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--muted);
+    text-align: left;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #F8FAFD; }
+
+  td {
+    padding: 13px 18px;
+    font-size: .87rem;
+    color: var(--text2);
+    vertical-align: middle;
+  }
+
+  /* ─── STATUS BADGES ── */
+  .badge {
+    display: inline-block;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .4px;
+  }
+  .badge-open    { background: #FFF3E0; color: #E65100; }
+  .badge-closed  { background: #E8F5E9; color: #2E7D32; }
+  .badge-pending { background: #E3F2FD; color: #1565C0; }
+
+  /* ─── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--muted);
+    font-size: .88rem;
+  }
+  .empty-state a { color: var(--teal); font-weight: 600; text-decoration: none; }
+  .empty-state a:hover { text-decoration: underline; }
+
+  /* ─── ACTION BUTTONS IN TABLE ── */
+  .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 </style>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+<div class="wrap">
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>C:/symfony/systeme_reclamation/src/Controller/ReclamationController.php</code></li>
-        <li>Your template at <code>C:/symfony/systeme_reclamation/templates/reclamation/index.html.twig</code></li>
-    </ul>
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow">Gestion</div>
+      <div class="page-title">Liste des <em>réclamations</em></div>
+    </div>
+    <a href="{{ path('app_reclamation_new') }}" class="btn btn-teal">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Ajouter une réclamation
+    </a>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Sujet</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reclamation in reclamations %}
+        <tr>
+          <td>{{ reclamation.nom }}</td>
+          <td>{{ reclamation.email }}</td>
+          <td>{{ reclamation.sujet }}</td>
+          <td>
+            {% if reclamation.statut == 'En attente' %}
+              <span class="badge badge-open">En attente</span>
+            {% elseif reclamation.statut == 'Traitée' %}
+              <span class="badge badge-closed">Traitée</span>
+            {% else %}
+              <span class="badge badge-pending">En cours</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="actions">
+              <a href="{{ path('app_reclamation_show', {'id': reclamation.id}) }}" class="btn btn-ghost">Voir</a>
+              <a href="{{ path('app_reclamation_edit', {'id': reclamation.id}) }}" class="btn btn-warning">Modifier</a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              Aucune réclamation enregistrée.
+              <a href="{{ path('app_reclamation_new') }}">Ajoutez votre première réclamation</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
 </div>
+
 {% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supprimer la réclamation #{{ reclamation.id }}{% endblock %}
+
+{% block body %}
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #F0F2F8;
+    --surface: #FFFFFF;
+    --navy:    #0B1D35;
+    --navy2:   #1C3557;
+    --red:     #E5334A;
+    --teal:    #07B9A0;
+    --muted:   #7D8FA8;
+    --border:  #E2E7F0;
+    --text:    #16253A;
+    --text2:   #475B74;
+    --font:    'Sora', sans-serif;
+    --mono:    'IBM Plex Mono', monospace;
+    --r:       12px;
+    --shadow:  0 2px 16px rgba(11,29,53,.09);
+    --shadow-l: 0 25px 70px rgba(11,29,53,.38);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── BACKGROUND (blurred page) ── */
+  .bg-page {
+    padding: 2.5rem 1.5rem;
+    max-width: 1080px; margin: 0 auto;
+    filter: blur(6px);
+    opacity: .25;
+    pointer-events: none;
+    user-select: none;
+  }
+  .fake-topbar {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .fake-title { font-size: 1.6rem; font-weight: 800; color: var(--navy); }
+  .fake-title em { color: var(--red); font-style: normal; }
+  .fake-btn { background: var(--teal); color: #fff; padding: 10px 20px; border-radius: 9px; font-size: .84rem; font-weight: 700; }
+  .fake-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .fake-stat { background: var(--surface); border-radius: 10px; padding: 1rem 1.4rem; border: 1px solid var(--border); flex: 1; height: 72px; }
+  .fake-table { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; height: 220px; }
+
+  /* ─── OVERLAY ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(11,29,53,.6);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(2px);
+  }
+
+  /* ─── MODAL BOX ── */
+  .modal-box {
+    background: var(--surface);
+    border-radius: 20px;
+    width: 100%; max-width: 440px;
+    box-shadow:
+      0 0 0 1px rgba(229,51,74,.15),
+      0 25px 70px rgba(11,29,53,.38),
+      0 8px 24px rgba(229,51,74,.15);
+    animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+    overflow: hidden;
+  }
+  @keyframes popIn {
+    from { transform: scale(.72) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  /* ─── MODAL HEADER ── */
+  .modal-header {
+    background: linear-gradient(160deg, #FEF2F4 0%, #FDE8EC 100%);
+    border-bottom: 1px solid rgba(229,51,74,.15);
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+  }
+  .modal-icon-ring {
+    width: 76px; height: 76px; border-radius: 50%;
+    margin: 0 auto 1.2rem;
+    background: #FEF2F2;
+    border: 2px solid rgba(229,51,74,.25);
+    box-shadow: 0 0 0 8px rgba(229,51,74,.07), 0 0 0 14px rgba(229,51,74,.04);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+  }
+  .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-bottom: .4rem; }
+  .modal-sub   { font-size: .83rem; color: var(--text2); line-height: 1.55; }
+
+  /* ─── MODAL BODY ── */
+  .modal-body { padding: 1.6rem 2rem; }
+
+  /* Record card */
+  .record-card {
+    background: #F8FAFF; border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 15px;
+    margin-bottom: 1.2rem;
+  }
+  .record-card-label {
+    font-size: .66rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px;
+  }
+  .record-card-main {
+    font-size: .9rem; font-weight: 700; color: var(--navy);
+    margin-bottom: 3px;
+  }
+  .record-card-sub {
+    font-size: .78rem; color: var(--text2);
+  }
+  .record-card-id {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono); font-size: .72rem;
+    color: var(--red); background: rgba(229,51,74,.07);
+    padding: 2px 8px; border-radius: 5px; margin-top: 6px;
+  }
+
+  /* Warning strip */
+  .warning-strip {
+    display: flex; align-items: flex-start; gap: 9px;
+    background: #FFFBF0; border: 1px solid #FFE4A0;
+    border-radius: 9px; padding: 11px 13px; margin-bottom: 1.4rem;
+    font-size: .78rem; color: #8A5500; line-height: 1.5;
+  }
+  .warning-strip svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* Buttons */
+  .modal-btns { display: flex; gap: .8rem; }
+  .modal-btns .btn { flex: 1; justify-content: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 20px; border-radius: 9px;
+    font-family: var(--font); font-size: .84rem; font-weight: 700;
+    cursor: pointer; border: none; text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover  { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+  .btn-red   { background: var(--red);   color: #fff; box-shadow: 0 4px 14px rgba(229,51,74,.32); }
+  .btn-red:hover { box-shadow: 0 7px 22px rgba(229,51,74,.5); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); box-shadow: none; }
+  .btn-ghost:hover { color: var(--text); background: var(--bg); }
+
+  /* ─── MODAL FOOTER ── */
+  .modal-footer {
+    padding: .9rem 2rem;
+    background: #FAFBFD; border-top: 1px solid var(--border);
+    text-align: center; font-size: .72rem; color: var(--muted); line-height: 1.6;
+  }
+</style>
+
+<!-- BACKGROUND (blurred) -->
+<div class="bg-page">
+  <div class="fake-topbar">
+    <div class="fake-title">Liste des <em>Réclamations</em></div>
+    <div class="fake-btn">+ Nouvelle réclamation</div>
+  </div>
+  <div class="fake-stats">
+    <div class="fake-stat"></div>
+    <div class="fake-stat"></div>
+    <div class="fake-stat"></div>
+  </div>
+  <div class="fake-table"></div>
+</div>
+
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay">
+  <div class="modal-box">
+
+    <!-- HEADER -->
+    <div class="modal-header">
+      <div class="modal-icon-ring">🗑️</div>
+      <div class="modal-title">Supprimer la réclamation ?</div>
+      <div class="modal-sub">Cette action est permanente et ne peut<br>pas être annulée.</div>
+    </div>
+
+    <!-- BODY -->
+    <div class="modal-body">
+
+      <!-- Record summary -->
+      <div class="record-card">
+        <div class="record-card-label">Réclamation ciblée</div>
+        <div class="record-card-main">{{ reclamation.nom }}</div>
+        <div class="record-card-sub">{{ reclamation.sujet }}</div>
+        <div class="record-card-id">#{{ reclamation.id }}</div>
+      </div>
+
+      <!-- Warning -->
+      <div class="warning-strip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Toutes les données de cette réclamation seront <strong>définitivement supprimées</strong> et ne pourront pas être récupérées.</span>
+      </div>
+
+      <!-- Buttons -->
+      <div class="modal-btns">
+        <form method="post" action="{{ path('app_reclamation_delete', {'id': reclamation.id}) }}" style="flex:1;display:flex;">
+          <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id) }}">
+          <button type="submit" class="btn btn-red" style="flex:1;justify-content:center;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            Oui, supprimer
+          </button>
+        </form>
+        <a href="{{ path('app_reclamation_show', {'id': reclamation.id}) }}" class="btn btn-ghost">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Annuler
+        </a>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="modal-footer">
+      Vous allez être redirigé vers la liste après suppression.<br>
+      <strong>Cette opération est irréversible.</strong>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
