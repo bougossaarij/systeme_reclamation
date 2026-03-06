@@ -238,7 +238,7 @@
 
   <!-- HEADING -->
   <div class="page-eyebrow">Détail</div>
-  <div class="page-title">Réclamation <em>#{{ reclamation.id }}</em></div>
+  <div class="page-title">Réclamation <em>{{ reclamation.id }}</em></div>
   <div class="page-sub">
     Informations complètes &nbsp;·
     {% if reclamation.statut == 'En attente' %}
@@ -261,8 +261,8 @@
       </div>
       <div class="detail-body">
         <div class="detail-row">
-          <span class="dl">Identifiant</span>
-          <span class="dv dv-id">#{{ reclamation.id }}</span>
+          <span class="dl">Numéro de Réclamation</span>
+          <span class="dv dv-id">{{ reclamation.id }}</span>
         </div>
         <div class="detail-row">
           <span class="dl">Nom</span>
@@ -295,26 +295,6 @@
 
     <!-- RIGHT: SIDEBAR -->
     <div class="side-panel">
-
-      <!-- STATUS TOGGLE -->
-      <div class="side-card">
-        <div class="side-card-header">Changer le statut</div>
-        <div class="side-card-body">
-          <div class="status-option {% if reclamation.statut == 'En attente' %}s-wait{% endif %}">
-            <span>⏳ En attente</span>
-            <div class="radio-circle"></div>
-          </div>
-          <div class="status-option {% if reclamation.statut == 'Traitée' %}s-done{% endif %}">
-            <span>✅ Traitée</span>
-            <div class="radio-circle"></div>
-          </div>
-          <button class="apply-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Appliquer le changement
-          </button>
-        </div>
-      </div>
-
       <!-- QUICK ACTIONS -->
       <div class="side-card">
         <div class="side-card-header">Actions rapides</div>

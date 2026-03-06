@@ -1,0 +1,683 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+
+\geometry{margin=2.5cm}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\title{\textbf{Rapport de Projet : Système de Gestion des Réclamations} \\ \large Développement avec le Framework Symfony}
+\author{Réalisé par : Arij bougossa et Tassnim Khalladi \\[1cm] \textbf{Enseignante : Houria El Ghoul}}
+\date{}
+
+\begin{document}
+
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Ce rapport documente la conception et la réalisation d'un \textbf{Système de Gestion des Réclamations} développé avec \textbf{Symfony}. L'application permet une gestion centralisée des requêtes utilisateurs, incluant la création, la consultation, la mise à jour des statuts et la suppression des réclamations.
+
+Ce projet a été réalisé sous l'encadrement de \textbf{Mme Houria El Ghoul}.
+
+\section{Préparation de l'environnement de travail}
+Pour initialiser le projet et préparer l'environnement, les commandes suivantes ont été exécutées :
+
+\begin{lstlisting}[language=bash, caption=Commandes de création et configuration du projet]
+# Création du projet Symfony
+composer create-project symfony/skeleton systeme_reclamation
+cd systeme_reclamation
+
+# Installation des composants nécessaires
+composer require webapp
+composer require --dev symfony/maker-bundle
+composer require symfony/orm-pack
+
+# Configuration de la base de données
+php bin/console doctrine:database:create
+
+# Création de l'entité et des migrations
+php bin/console make:entity Reclamation
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+
+# Création du contrôleur
+php bin/console make:controller ReclamationController
+
+# Création des fichiers de templates (PowerShell)
+"ajouter.html.twig","modifier.html.twig","consulter.html.twig","afficher.html.twig" | ForEach-Object { New-Item $_ -ItemType File }
+\end{lstlisting}
+
+\section{Découverte de la structure avec VS Code}
+
+\subsection{Ouvrir le projet dans VS Code}
+\begin{lstlisting}[language=bash]
+code .
+\end{lstlisting}
+\textbf{Explication :} Le point `.` signifie "le dossier courant". Cette commande ouvre VS Code dans le dossier où vous êtes.
+
+\subsection{Exploration de la structure}
+Dans VS Code, vous verrez cette structure :
+\begin{lstlisting}
+systeme_reclamation/
+  .env                  # Fichier de configuration (base de données, etc.)
+  public/               # Dossier accessible depuis le navigateur
+    index.php           # Point d'entrée de l'application
+  src/                  # Votre code PHP
+    Controller/         # Vos contrôleurs
+    Entity/             # Vos entités Doctrine
+  templates/            # Vos vues Twig
+  config/               # Fichiers de configuration
+  var/                  # Cache, logs, base de données SQLite
+  composer.json         # Dépendances du projet
+\end{lstlisting}
+
+\section{Configuration de la base de données}
+
+\subsection{Commande 4 : Installation de Doctrine (si pas déjà fait)}
+\begin{lstlisting}[language=bash]
+composer require symfony/orm-pack
+\end{lstlisting}
+\textbf{Explication :} Doctrine est l'ORM (Object-Relational Mapping) qui permet de travailler avec la base de données en utilisant des objets PHP.
+
+\subsection{Modification du fichier .env}
+Dans VS Code, ouvrez le fichier \texttt{.env} et modifiez la configuration de la base de données. Recherchez la section \texttt{DATABASE\_URL} et remplacez par :
+\begin{lstlisting}
+### > doctrine/doctrine-bundle ###
+# DATABASE_URL="mysql://app:!ChangeMe!@127.0.0.1:3306/app?serverVersion=8.0.32&charset=utf8mb4"
+# DATABASE_URL="mysql://app:!ChangeMe!@127.0.0.1:3306/app?serverVersion=10.11.2-MariaDB&charset=utf8mb4"
+DATABASE_URL="sqlite:///%kernel.project_dir%/var/systeme_reclamation.db"
+### < doctrine/doctrine-bundle ###
+\end{lstlisting}
+\textbf{Explication :}
+\begin{itemize}
+    \item \texttt{sqlite://} : indique qu'on utilise SQLite.
+    \item \texttt{\%kernel.project\_dir\%} : variable Symfony qui représente le chemin absolu du projet.
+    \item \texttt{/var/systeme\_reclamation.db} : nom et emplacement du fichier de base de données.
+\end{itemize}
+
+\subsection{Commande 5 : Création de la base de données (optionnelle pour SQLite)}
+\begin{lstlisting}[language=bash]
+php bin/console doctrine:database:create
+\end{lstlisting}
+\textbf{Note importante :} Avec SQLite, cette commande peut générer une erreur car SQLite ne supporte pas la commande explicite "CREATE DATABASE". Le fichier sera créé automatiquement lors de la première migration. Vous pouvez ignorer cette étape.
+
+\section{Création de l'entité Reclamation}
+Une entité est une classe PHP qui représente une table dans la base de données.
+
+\subsection{Commande 6 : Création de l'entité Reclamation}
+\begin{lstlisting}[language=bash]
+php bin/console make:entity Reclamation
+\end{lstlisting}
+\textbf{Explication :} Cette commande lance un assistant interactif pour créer une entité. Répondez aux questions comme suit :
+\begin{lstlisting}
+New property name (press <return> to stop adding fields):
+> nom
+Field type (enter ? to see all types) [string]:
+> string
+Field length [255]:
+> 255
+Can this field be null in the database (nullable) (yes/no) [no]:
+> no
+
+New property name:
+> email
+Field type [string]:
+> string
+Field length [255]:
+> 255
+Nullable? [no]:
+> no
+
+New property name:
+> sujet
+Field type [string]:
+> string
+Field length [255]:
+> 255
+Nullable? [no]:
+> no
+
+New property name:
+> message
+Field type [string]:
+> text
+Nullable? [no]:
+> no
+
+New property name:
+> statut
+Field type [string]:
+> string
+Field length [20]:
+> 20
+Nullable? [no]:
+> no
+
+New property name:
+> [Appuyez sur Entree]
+\end{lstlisting}
+
+\section{Architecture du Projet}
+Le projet suit le modèle \textbf{MVC} (Modèle-Vue-Contrôleur) :
+\begin{itemize}
+    \item \textbf{Modèle} : Géré par Doctrine ORM (Entité \texttt{Reclamation}).
+    \item \textbf{Vue} : Géré par le moteur de template Twig.
+    \item \textbf{Contrôleur} : Géré par \texttt{ReclamationController}.
+\end{itemize}
+
+\section{La Couche Modèle (Entity)}
+L'entité \texttt{Reclamation} représente les données stockées en base de données.
+
+\subsection{L'Entité Reclamation}
+\begin{lstlisting}[language=PHP, caption=Extraits de src/Entity/Reclamation.php]
+#[ORM\Entity(repositoryClass: ReclamationRepository::class)]
+class Reclamation
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $nom = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $email = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $sujet = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $message = null;
+
+    #[ORM\Column(length: 20)]
+    private ?string $statut = 'En attente';
+}
+\end{lstlisting}
+
+\section{La Couche Contrôleur}
+Le contrôleur \texttt{ReclamationController} contient la logique métier pour les opérations CRUD. Il fait le lien entre l'entité et les vues.
+
+\subsection{Liste des Réclamations (index)}
+La méthode \texttt{index()} récupère toutes les réclamations et prépare des statistiques pour le tableau de bord.
+\begin{lstlisting}[language=PHP]
+#[Route('/reclamations', name: 'app_reclamation_index')]
+public function index(ReclamationRepository $reclamationRepository): Response
+{
+    $reclamations = $reclamationRepository->findAllOrderedByDate();
+    $total = count($reclamations);
+    return $this->render('reclamation/index.html.twig', [
+        'reclamations' => $reclamations,
+        'total' => $total,
+    ]);
+}
+\end{lstlisting}
+
+\subsection{Dépôt d'une nouvelle Réclamation (new)}
+Cette méthode traite la soumission du formulaire d'ajout. Elle utilise \texttt{\$request->isMethod('POST')} pour différencier l'affichage du formulaire du traitement des données.
+\begin{lstlisting}[language=PHP]
+#[Route('/reclamation/nouvelle', name: 'app_reclamation_new')]
+public function new(Request $request, EntityManagerInterface $entityManager): Response
+{
+    if ($request->isMethod('POST')) {
+        $reclamation = new Reclamation();
+        $reclamation->setNom($request->request->get('nom'));
+        $reclamation->setEmail($request->request->get('email'));
+        $reclamation->setSujet($request->request->get('sujet'));
+        $reclamation->setMessage($request->request->get('message'));
+
+        $entityManager->persist($reclamation);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Reclamation deposee avec succes !');
+        return $this->redirectToRoute('app_reclamation_index');
+    }
+    return $this->render('reclamation/ajouter.html.twig');
+}
+\end{lstlisting}
+
+\subsection{Consultation d'un détail (show)}
+Elle utilise le \textbf{ParamConverter} de Symfony pour récupérer automatiquement l'objet \texttt{Reclamation} à partir de l'ID passé dans l'URL.
+\begin{lstlisting}[language=PHP]
+#[Route('/reclamation/{id}', name: 'app_reclamation_show', methods: ['GET'])]
+public function show(Reclamation $reclamation): Response
+{
+    return $this->render('reclamation/consulter.html.twig', ['reclamation' => $reclamation]);
+}
+\end{lstlisting}
+
+\subsection{Modification (edit)}
+La méthode \texttt{edit()} traite la soumission du formulaire de modification. Elle permet de mettre à jour tous les champs, y compris le statut.
+\begin{lstlisting}[language=PHP]
+#[Route('/reclamation/{id}/modifier', name: 'app_reclamation_edit')]
+public function edit(Request $request, Reclamation $reclamation, EntityManagerInterface $entityManager): Response 
+{
+    if ($request->isMethod('POST')) {
+        $reclamation->setStatut($request->request->get('statut'));
+        $entityManager->flush();
+        return $this->redirectToRoute('app_reclamation_index');
+    }
+    return $this->render('reclamation/modifier.html.twig', ['reclamation' => $reclamation]);
+}
+\end{lstlisting}
+
+\subsection{Suppression (delete)}
+Pour des raisons de sécurité, cette méthode n'accepte que les requêtes \textbf{POST} et vérifie un jeton \textbf{CSRF}.
+\begin{lstlisting}[language=PHP]
+#[Route('/reclamation/{id}/supprimer', name: 'app_reclamation_delete', methods: ['POST'])]
+public function delete(Request $request, Reclamation $reclamation, EntityManagerInterface $entityManager): Response 
+{
+    if ($this->isCsrfTokenValid('delete'.$reclamation->getId(), $request->request->get('_token'))) {
+        $entityManager->remove($reclamation);
+        $entityManager->flush();
+    }
+    return $this->redirectToRoute('app_reclamation_index');
+}
+\end{lstlisting}
+\section{Interfaces Utilisateur (Vues)}
+Les vues sont créées avec le moteur de template \textbf{Twig}. Elles permettent d'afficher les données de manière dynamique.
+
+\subsection{Formulaire d'ajout (ajouter.html.twig)}
+Cette vue permet à l'utilisateur de soumettre une nouvelle réclamation.
+
+\subsubsection{Éléments du formulaire}
+\begin{itemize}
+    \item \textbf{Héritage} : Utilise \texttt{\{\% extends 'base.html.twig' \%\}} pour conserver le style global.
+    \item \textbf{Champs obligatoires} : Nom, Email, Sujet et Message (tous marqués d'une astérisque).
+    \item \textbf{Bouton d'envoi} : Déclenche l'enregistrement via la méthode \texttt{new()} du contrôleur.
+\end{itemize}
+
+\subsubsection{Le code complet}
+\begin{lstlisting}[language=HTML, caption=templates/reclamation/ajouter.html.twig]
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<h2>Déposer une nouvelle réclamation</h2>
+
+<form method="post" style="margin-top: 30px;">
+    <div class="form-group">
+        <label for="nom">Nom complet *</label>
+        <input type="text" id="nom" name="nom" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email *</label>
+        <input type="email" id="email" name="email" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="sujet">Sujet *</label>
+        <input type="text" id="sujet" name="sujet" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="message">Message détaillé *</label>
+        <textarea id="message" name="message" class="form-control" rows="5" required></textarea>
+    </div>
+
+    <div class="form-group" style="margin-top: 20px;">
+        <button type="submit" class="btn btn-success">Envoyer la réclamation</button>
+        <a href="{{ path('app_reclamation_index') }}" class="btn">Annuler</a>
+    </div>
+</form>
+{% endblock %}
+\end{lstlisting}
+
+\subsection{Formulaire de modification (modifier.html.twig)}
+Cette vue est utilisée pour éditer une réclamation existante, notamment pour changer son statut.
+
+\subsubsection{Fonctionnalités spécifiques}
+\begin{itemize}
+    \item \textbf{Pré-remplissage} : Les champs sont remplis avec les données actuelles de l'entité (\texttt{value="\{\{ reclamation.nom \}\}"}).
+    \item \textbf{Gestion du Statut} : Un menu déroulant (\texttt{select}) permet de passer de "En attente" à "Traitée".
+    \item \textbf{Validation} : Le bouton "Enregistrer les modifications" met à jour la base de données.
+\end{itemize}
+
+\subsubsection{Le code complet}
+\begin{lstlisting}[language=HTML, caption=templates/reclamation/modifier.html.twig]
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<h2>Modifier la réclamation #{{ reclamation.id }}</h2>
+
+<form method="post" style="margin-top: 30px;">
+    <div class="form-group">
+        <label for="nom">Nom complet *</label>
+        <input type="text" id="nom" name="nom" value="{{ reclamation.nom }}" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email *</label>
+        <input type="email" id="email" name="email" value="{{ reclamation.email }}" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="sujet">Sujet *</label>
+        <input type="text" id="sujet" name="sujet" value="{{ reclamation.sujet }}" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="message">Message détaillé *</label>
+        <textarea id="message" name="message" class="form-control" rows="5" required>{{ reclamation.message }}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="statut">Statut</label>
+        <select name="statut" class="form-control">
+            <option value="En attente" {% if reclamation.statut == 'En attente' %}selected{% endif %}>En attente</option>
+            <option value="Traitée" {% if reclamation.statut == 'Traitée' %}selected{% endif %}>Traitée</option>
+        </select>
+    </div>
+
+    <div class="form-group" style="margin-top: 20px;">
+        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        <a href="{{ path('app_reclamation_index') }}" class="btn">Annuler</a>
+    </div>
+</form>
+{% endblock %}
+\end{lstlisting}
+
+\subsection{Le squelette de base (base.html.twig)}
+Le fichier \texttt{base.html.twig} est le parent de toutes les vues. Il centralise la charte graphique et la structure globale.
+
+\subsubsection{Architecture du CSS}
+Le style est intégré directement pour faciliter la portabilité du projet. Il est organisé en plusieurs catégories :
+\begin{itemize}
+    \item \textbf{Normalisation} : Mise à zéro des marges et configuration du \texttt{box-sizing}.
+    \item \textbf{Composants UI} : Définition des boutons (\texttt{.btn}), des ombres et des arrondis du conteneur.
+    \item \textbf{Tableaux et Formulaires} : Mise en forme élégante des données et des champs de saisie.
+    \item \textbf{Alertes} : Styles spécifiques pour les retours utilisateur (messages de succès).
+\end{itemize}
+
+\subsubsection{Structure du HTML}
+Le corps du document (\texttt{<body>}) suit une hiérarchie logique :
+\begin{itemize}
+    \item \textbf{Container} : Une boîte principale de 1200px centrée.
+    \item \textbf{En-tête} : Titre du projet et nom de l'enseignante.
+    \item \textbf{Système de Notification} : Boucle Twig qui affiche les messages "flash".
+    \item \textbf{Point d'Injection} : Le bloc \texttt{\{\% block body \%\}} récupère le contenu des pages enfants.
+\end{itemize}
+
+\subsubsection{Code complet et structuré}
+\begin{lstlisting}[language=HTML, caption=templates/base.html.twig]
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Système Réclamation{% endblock %}</title>
+    <style>
+        /* 1. RESET & BASICS */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; padding: 20px; }
+        
+        /* 2. LAYOUT */
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 30px; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        
+        /* 3. BUTTONS */
+        .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; font-size: 14px; margin: 2px; }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+        .btn-warning { background: #f39c12; }
+        
+        /* 4. TABLES & FORMS */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #3498db; color: white; }
+        tr:hover { background: #f5f5f5; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-control { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
+        
+        /* 5. ALERTS */
+        .alert { padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestionnaire de Réclamations</h1>
+        <p><strong>Enseignante : Houria El Ghoul</strong></p>
+
+        {# Affichage des messages flash #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+
+        {# Contenu dynamique #}
+        {% block body %}{% endblock %}
+    </div>
+</body>
+</html>
+\end{lstlisting}
+
+\subsection{Liste des réclamations (index.html.twig)}
+Cette page est le cœur du système de gestion. Elle permet de visualiser l'état de toutes les réclamations en un coup d'œil.
+
+\subsubsection{Composants principaux}
+\begin{itemize}
+    \item \textbf{En-tête dynamique} : Affiche le titre et un bouton d'ajout rapide.
+    \item \textbf{Tableau de données} : Présente les informations clés (Nom, Email, Sujet).
+    \item \textbf{Badges de Statut} : Utilise des classes CSS (\texttt{.disponible}, \texttt{.indisponible}) pour différencier visuellement les réclamations traitées.
+    \item \textbf{Actions CRUD} : Chaque ligne propose des liens pour voir, modifier ou supprimer la réclamation.
+\end{itemize}
+
+\subsubsection{Le code complet (v2 Premium)}
+\begin{lstlisting}[language=HTML, caption=templates/reclamation/index.html.twig]
+{% extends 'base.html.twig' %}
+
+{% block body %}
+{# ... Header et Styles omis pour la clarte ... #}
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Sujet</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reclamation in reclamations %}
+        <tr>
+            {# ... Champs Nom, Email, Sujet ... #}
+            <td>{{ reclamation.nom }}</td>
+            <td>{{ reclamation.email }}</td>
+            <td>{{ reclamation.sujet }}</td>
+            <td>{{ reclamation.statut }}</td>
+            <td>
+                <div class="actions">
+                    <a href="{{ path('app_reclamation_show', {'id': reclamation.id}) }}" class="btn">Voir</a>
+                    <a href="{{ path('app_reclamation_edit', {'id': reclamation.id}) }}" class="btn btn-warning">Modifier</a>
+                    
+                    {# Formulaire de suppression avec modal personnalisee #}
+                    <form method="post" action="{{ path('app_reclamation_delete', {'id': reclamation.id}) }}" class="delete-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id) }}">
+                        <button type="button" class="btn btn-red delete-trigger" 
+                                data-id="{{ reclamation.id }}" 
+                                data-name="{{ reclamation.nom }}">Supprimer</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Structure de la Modal de Confirmation (Popup) -->
+<div id="deleteModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-title">Confirmer la suppression</div>
+    <div class="modal-text">Voulez-vous vraiment supprimer cette reclamation ?</div>
+    <div class="modal-actions">
+      <button id="cancelBtn" class="btn">Annuler</button>
+      <button id="confirmBtn" class="btn btn-red">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    let activeForm = null;
+    const modal = document.getElementById('deleteModal');
+
+    document.querySelectorAll('.delete-trigger').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            activeForm = this.closest('form');
+            modal.style.display = 'flex'; // Affiche la modal
+        });
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        modal.style.display = 'none'; // Ferme la modal
+    });
+
+    document.getElementById('confirmBtn').addEventListener('click', () => {
+        if (activeForm) activeForm.submit();
+    });
+</script>
+{% endblock %}
+\end{lstlisting}
+
+\subsection{Affichage des réclamations (afficher.html.twig)}
+Cette vue est une version simplifiée du tableau de bord pour une consultation rapide.
+
+\subsubsection{Objectif}
+Elle permet de lister les réclamations sans les boutons d'action complexes, offrant une vue épurée des données principales.
+
+\subsubsection{Le code complet}
+\begin{lstlisting}[language=HTML, caption=templates/reclamation/afficher.html.twig]
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<h2>Liste des réclamations</h2>
+<a href="{{ path('app_reclamation_new') }}">Nouveau</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Sujet</th>
+            <th>Statut</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reclamation in reclamations %}
+        <tr>
+            <td>{{ reclamation.nom }}</td>
+            <td>{{ reclamation.email }}</td>
+            <td>{{ reclamation.sujet }}</td>
+            <td>{{ reclamation.statut }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+\end{lstlisting}
+
+\subsection{Détails d'une réclamation (consulter.html.twig)}
+Cette page offre une vue détaillée "lecture seule" sur une réclamation particulière.
+
+\subsubsection{Informations affichées}
+Elle reprend l'ensemble des champs de l'entité \texttt{Reclamation} de manière claire, permettant ainsi de lire le message complet avant d'entreprendre une action de modification.
+
+\subsubsection{Le code complet}
+\begin{lstlisting}[language=HTML, caption=templates/reclamation/consulter.html.twig]
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<h2>Détails de la réclamation #{{ reclamation.id }}</h2>
+
+<p><strong>Nom :</strong> {{ reclamation.nom }}</p>
+<p><strong>Email :</strong> {{ reclamation.email }}</p>
+<p><strong>Sujet :</strong> {{ reclamation.sujet }}</p>
+<p><strong>Message :</strong> {{ reclamation.message }}</p>
+<p><strong>Statut :</strong> {{ reclamation.statut }}</p>
+
+<a href="{{ path('app_reclamation_index') }}">Retour à la liste</a>
+{% endblock %}
+\end{lstlisting}
+
+\section{Lancement et test de l'application}
+
+\subsection{Démarrer le serveur}
+Pour tester l'application localement, vous devez lancer le serveur web intégré ou via la CLI Symfony :
+
+\begin{lstlisting}[language=bash, caption=Démarrage du serveur]
+# Avec la CLI Symfony (recommandé)
+symfony server:start
+
+# OU avec le serveur PHP intégré si vous n'avez pas la CLI
+php -S localhost:8000 -t public
+\end{lstlisting}
+
+\textbf{Explication :} Symfony démarre un serveur local. L'URL par défaut est généralement \texttt{http://localhost:8000}.
+
+\subsection{Tester les fonctionnalités}
+Une fois le serveur lancé, ouvrez votre navigateur et testez les routes suivantes de votre projet :
+\begin{itemize}
+    \item \texttt{http://localhost:8000/reclamations} : Liste de toutes les réclamations.
+    \item \texttt{http://localhost:8000/reclamation/nouvelle} : Accès au formulaire de dépôt.
+\end{itemize}
+
+\subsection{Commandes utiles pour le débogage}
+En cas de problème, ces commandes Symfony sont indispensables :
+
+\begin{lstlisting}[language=bash, caption=Commandes de diagnostic]
+# 1. Voir toutes les routes configurées
+php bin/console debug:router
+
+# 2. Vider le cache de l'application
+php bin/console cache:clear
+
+# 3. Vérifier la configuration de la base de données
+# Sur Windows (cmd/powershell) :
+php bin/console debug:container --parameters | findstr database
+\end{lstlisting}
+
+\section{Conclusion}
+La réalisation de ce mini-projet de \textbf{Système de Gestion des Réclamations} avec \textbf{Symfony} nous a permis de mettre en pratique les concepts fondamentaux du développement web moderne. À travers l'implémentation complète d'un CRUD (Create, Read, Update, Delete) et la mise en place d'une architecture MVC (Modèle-Vue-Contrôleur) rigoureuse, nous avons pu apprécier la puissance et la flexibilité que propose ce framework.
+
+En utilisant l'ORM \textbf{Doctrine} pour l'interaction avec la base de données \textbf{SQLite} et le moteur de templates \textbf{Twig} pour la création d'interfaces dynamiques et stylisées (notamment avec l'ajout de composants interactifs comme la modal de suppression), nous avons conçu une application à la fois fonctionnelle et esthétique. Ce projet a également été l'occasion de renforcer nos compétences en débogage technique et en documentation logicielle via \textbf{LaTeX}.
+
+En conclusion, cette expérience constitue une base solide pour nos futurs développements web, ouvrant la voie à l'exploration de fonctionnalités plus avancées telles que la gestion de l'authentification, la sécurité renforcée et l'intégration d'APIs tierces.
+
+\end{document}

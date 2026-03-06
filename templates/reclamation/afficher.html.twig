@@ -1,7 +1,56 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Afficher une réclamation{% endblock %}
+{% block title %}Liste des réclamations{% endblock %}
 
 {% block body %}
-<h1>Afficher une réclamation</h1>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Liste des réclamations</h2>
+    <a href="{{ path('app_reclamation_new') }}" class="btn btn-success">Ajouter une réclamation</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Sujet</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reclamation in reclamations %}
+        <tr>
+            <td>{{ reclamation.nom }}</td>
+            <td>{{ reclamation.email }}</td>
+            <td>{{ reclamation.sujet }}</td>
+            <td>
+                {% if reclamation.statut == 'Traitée' %}
+                    <span class="disponible">Traitée</span>
+                {% else %}
+                    <span class="indisponible">En attente</span>
+                {% endif %}
+            </td>
+            <td>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="{{ path('app_reclamation_show', {'id': reclamation.id}) }}" class="btn">Voir</a>
+                    <a href="{{ path('app_reclamation_edit', {'id': reclamation.id}) }}" class="btn btn-warning">Modifier</a>
+                    
+                    <form method="post" action="{{ path('app_reclamation_delete', {'id': reclamation.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?');" style="margin: 0;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id) }}">
+                        <button class="btn btn-danger">Supprimer</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 40px;">
+                Aucune réclamation trouvée.
+                <a href="{{ path('app_reclamation_new') }}">Ajoutez votre première réclamation</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

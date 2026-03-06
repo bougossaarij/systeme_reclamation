@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class ReclamationController extends AbstractController
 {
@@ -100,7 +100,7 @@ class ReclamationController extends AbstractController
             $this->addFlash('error', 'Tous les champs sont obligatoires.');
         }
 
-        return $this->render('reclamation/edit.html.twig', [
+        return $this->render('reclamation/modifier.html.twig', [
             'reclamation' => $reclamation,
         ]);
     }

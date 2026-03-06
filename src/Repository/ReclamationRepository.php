@@ -39,5 +39,14 @@ class ReclamationRepository extends ServiceEntityRepository
     //            ->getQuery()
     //            ->getOneOrNullResult()
     //        ;
-    //    }
+    /**
+     * @return Reclamation[]
+     */
+    public function findAllOrderedByDate(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->orderBy('r.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
